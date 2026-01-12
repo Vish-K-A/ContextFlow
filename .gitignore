@@ -1,0 +1,14 @@
+# Environments
+.env
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+
+# Database (Local only)
+db.sqlite3
+
+# Media (Uploaded user files)
+media/
