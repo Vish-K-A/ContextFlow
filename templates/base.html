@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Django App{% endblock %}</title>
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body class="sb-expanded">
+    <aside>
+        <nav>
+            <ul>
+                <li>
+                    <a href="#" onclick="toggleSidebar(event)">
+                        <img src="{% static 'images/sidebar.svg' %}" width="24" height="24" alt="Menu">
+                    </a>
+                </li>
+                
+                <!-- Navigation items -->
+                <li>
+                    <a href="#">
+                        <img src="{% static 'images/chat.svg' %}" width="24" height="24" alt="New">
+                        <span>New Chat</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <img src="{% static 'images/search.svg' %}" width="24" height="24" alt="New">
+                        <span>Search</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <img src="{% static 'images/document.svg' %}" width="24" height="24" alt="Docs">
+                        <span>Documents</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <img src="{% static 'images/history.svg' %}" width="24" height="24" alt="History">
+                        <span>History</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <img src="{% static 'images/settings.svg' %}" width="24" height="24" alt="Settings">
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+    <nav>
+        <div class="logo">ContextFlow</div>
+        <div class="nav-links">
+        <a href="#">Login</a>
+        <a href="#">Sign Up For Free</a>
+    </div>
+    </nav>
+    <main>
+        {% block content %}
+        <h1>Expandable Sidebar</h1>
+        <p>Click the menu icon to toggle the sidebar. Settings is positioned at the bottom.</p>
+        <p>Your main content goes here.</p>
+        {% endblock %}
+    </main>
+
+    <script>
+        function toggleSidebar(e) {
+            e.preventDefault(); // Prevent default link behavior
+            document.body.classList.toggle("sb-expanded");
+            
+            // Optional: Store preference in localStorage
+            const isExpanded = document.body.classList.contains("sb-expanded");
+            localStorage.setItem("sidebar-expanded", isExpanded);
+        }
+        
+        // Optional: Restore sidebar state on page load
+        document.addEventListener("DOMContentLoaded", function() {
+            const savedState = localStorage.getItem("sidebar-expanded");
+            if (savedState === "false") {
+                document.body.classList.remove("sb-expanded");
+            }
+        });
+    </script>
+</body>
+</html>
