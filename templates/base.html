@@ -56,8 +56,8 @@
     <nav>
         <div class="logo">ContextFlow</div>
         <div class="nav-links">
-        <a href="#">Login</a>
-        <a href="#">Sign Up For Free</a>
+        <a href="{% url 'login' %}">Login</a>
+        <a href="{% url 'signup' %}">Sign Up For Free</a>
     </div>
     </nav>
     <main>
@@ -73,12 +73,10 @@
             e.preventDefault(); // Prevent default link behavior
             document.body.classList.toggle("sb-expanded");
             
-            // Optional: Store preference in localStorage
             const isExpanded = document.body.classList.contains("sb-expanded");
             localStorage.setItem("sidebar-expanded", isExpanded);
         }
         
-        // Optional: Restore sidebar state on page load
         document.addEventListener("DOMContentLoaded", function() {
             const savedState = localStorage.getItem("sidebar-expanded");
             if (savedState === "false") {
