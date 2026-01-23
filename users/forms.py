@@ -22,12 +22,12 @@ class UserRegistrationForm(forms.Form):
         return password2
     
 class LoginForm(forms.Form):
-    email = forms.EmailField(label="Email Adress",widget=forms.EmailInput())
+    email = forms.EmailField(label="Email Address",widget=forms.EmailInput())
     password = forms.CharField(label="Password",widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password'}))
 
     def clean(self):
         cleaned_data=super().clean()
-        email=cleaned_data.data.get('email')
+        email=cleaned_data.get('email')
         password=cleaned_data.get("password")
 
         if email and password:
