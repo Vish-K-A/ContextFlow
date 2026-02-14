@@ -67,7 +67,7 @@
         {% block content %}
             <h1>Where should we begin?</h1>
             
-            <form method="POST" enctype="multipart/form-data" action="#">
+            <form method="POST" enctype="multipart/form-data" action="{% url 'documents' %}">
                 {% csrf_token %}
                 
                 <input type="file" 
@@ -83,7 +83,7 @@
                         <img src="{% static 'images/add.svg' %}" width="24" height="24" alt="Add">
                     </button>
                     
-                    <input type="text" name="text_prompt" placeholder="Ask anything" required>
+                    <input type="text" name="text_prompt" placeholder="Ask anything">
                     
                     <button type="button" class="mic-button">
                         <img src="{% static 'images/microphone.svg' %}" width="20" height="20" alt="Voice">
