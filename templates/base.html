@@ -19,7 +19,6 @@
                     </a>
                 </li>
                 
-                <!-- Navigation items -->
                 <li>
                     <a href="#">
                         <img src="{% static 'images/chat.svg' %}" width="24" height="24" alt="New">
@@ -33,7 +32,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#">
+                    <a href="{% url 'files' %}">
                         <img src="{% static 'images/document.svg' %}" width="24" height="24" alt="Docs">
                         <span>Documents</span>
                     </a>
@@ -56,15 +55,45 @@
     <nav>
         <div class="logo">ContextFlow</div>
         <div class="nav-links">
-        <a href="{% url 'login' %}">Login</a>
-        <a href="{% url 'signup' %}">Sign Up For Free</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'signup' %}">Sign Up For Free</a>
+        {% endif %}
     </div>
     </nav>
     <main>
         {% block content %}
-        <h1>Expandable Sidebar</h1>
-        <p>Click the menu icon to toggle the sidebar. Settings is positioned at the bottom.</p>
-        <p>Your main content goes here.</p>
+            <h1>Where should we begin?</h1>
+            
+            <form method="POST" enctype="multipart/form-data" action="#">
+                {% csrf_token %}
+                
+                <input type="file" 
+                       name="file_field" 
+                       multiple 
+                       id="home_file_input" 
+                       class="hidden-input">
+
+                <div id="home-file-preview-area" class="file-preview-container"></div>
+                
+                <div class="input-row">
+                    <button type="button" class="icon-button" id="home-file-trigger" title="Attach files">
+                        <img src="{% static 'images/add.svg' %}" width="24" height="24" alt="Add">
+                    </button>
+                    
+                    <input type="text" name="text_prompt" placeholder="Ask anything" required>
+                    
+                    <button type="button" class="mic-button">
+                        <img src="{% static 'images/microphone.svg' %}" width="20" height="20" alt="Voice">
+                    </button>
+                    
+                    <button type="submit">
+                        <img src="{% static 'images/arrow.svg' %}" width="24" height="24" alt="Search">
+                    </button>
+                </div>
+            </form>
         {% endblock %}
     </main>
 
@@ -81,6 +110,96 @@
             const savedState = localStorage.getItem("sidebar-expanded");
             if (savedState === "false") {
                 document.body.classList.remove("sb-expanded");
+            }
+
+            const homeFileInput = document.getElementById('home_file_input');
+            const homeFileTrigger = document.getElementById('home-file-trigger');
+            const homeFilePreview = document.getElementById('home-file-preview-area');
+            
+            if (homeFileInput && homeFileTrigger) {
+                let selectedFiles = [];
+                
+                homeFileTrigger.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    homeFileInput.click();
+                });
+                
+                homeFileInput.addEventListener('change', function(e) {
+                    const newFiles = Array.from(e.target.files);
+                    selectedFiles = selectedFiles.concat(newFiles);
+                    updateHomeFilePreview();
+                });
+                
+                function updateHomeFilePreview() {
+                    homeFilePreview.innerHTML = '';
+                    
+                    if (selectedFiles.length === 0) {
+                        return;
+                    }
+                    
+                    selectedFiles.forEach((file, index) => {
+                        const chip = document.createElement('div');
+                        chip.className = 'file-chip';
+                        
+                        const icon = document.createElement('div');
+                        let extension = file.name.split('.').pop().toLowerCase();
+                        const cssClass = /^\d/.test(extension) ? `ext-${extension}` : extension;
+                        icon.className = `file-chip-icon ${cssClass}`;
+                        icon.textContent = extension;
+                        chip.appendChild(icon);
+                        
+                        const info = document.createElement('div');
+                        info.className = 'file-chip-info';
+                        
+                        const fileName = document.createElement('div');
+                        fileName.className = 'file-chip-name';
+                        fileName.textContent = file.name;
+                        fileName.title = file.name; 
+                        info.appendChild(fileName);
+                        
+                        const fileSize = document.createElement('div');
+                        fileSize.className = 'file-chip-size';
+                        fileSize.textContent = formatFileSize(file.size);
+                        info.appendChild(fileSize);
+                        
+                        chip.appendChild(info);
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'file-chip-remove';
+                        removeBtn.innerHTML = '×';
+                        removeBtn.title = 'Remove file';
+                        removeBtn.onclick = function() {
+                            removeHomeFile(index);
+                        };
+                        chip.appendChild(removeBtn);
+                        
+                        homeFilePreview.appendChild(chip);
+                    });
+                }
+                
+                function formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+                }
+                
+                function removeHomeFile(index) {
+                    selectedFiles.splice(index, 1);
+                    updateHomeFilePreview();
+                    updateHomeFileInput();
+                }
+                
+                function updateHomeFileInput() {
+                    const dataTransfer = new DataTransfer();
+                    selectedFiles.forEach(file => {
+                        dataTransfer.items.add(file);
+                    });
+                    homeFileInput.files = dataTransfer.files;
+                }
             }
         });
     </script>

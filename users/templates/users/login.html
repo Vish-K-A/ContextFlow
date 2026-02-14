@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In - ContextFlow{% endblock %}
+
+{% block content %}
+<div class="auth-overlay">
+    <div class="auth-container">
+        <div class="auth-modal">
+            <button class="auth-close" onclick="window.history.back()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            
+            <form method="POST" class="auth-form">
+                <fieldset>
+                {% csrf_token %}
+                <legend>
+                    Sign In
+                </legend>
+                {% if form.non_field_errors %}
+                <div class="error-banner">
+                    {% for error in form.non_field_errors %}
+                    <small>{{error}}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="field-errors">
+                            {% for errors in form.email.errors %}
+                            <small>{{errors}}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{form.password.label_tag}}
+                    {{form.password}}
+                    {% if form.password.errors %}
+                    <div class="field-errors">
+                        {% for errors in form.password.errors %}
+                        <small>{{errors}}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            
+            </fieldset>    
+            <div class="auth-button-container">
+                <button type="submit" class="auth-submit-btn">Sign In</button>
+            </div>
+            </form>
+            <div class="auth-footer">
+                <small>
+                    Don't Have an Account? <a href="{% url 'signup' %}">Sign Up</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

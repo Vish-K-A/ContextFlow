@@ -23,7 +23,7 @@ class UserRegistrationForm(forms.Form):
     
 class LoginForm(forms.Form):
     email = forms.EmailField(label="Email Address",widget=forms.EmailInput())
-    password = forms.CharField(label="Password",widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password'}))
+    password = forms.CharField(label="Password",widget=forms.PasswordInput())
 
     def clean(self):
         cleaned_data=super().clean()

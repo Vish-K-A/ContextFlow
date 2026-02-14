@@ -4,6 +4,17 @@
   box-sizing: border-box;
 }
 
+:root {
+  --primary-color: #000000;
+  --primary-hover: #1a1a1a;
+  --text-primary: #2d333a;
+  --text-secondary: #6e6e80;
+  --border-color: #d1d5db;
+  --background: #ffffff;
+  --modal-background: #ffffff;
+  --input-background: #ffffff;
+}
+
 body {
   --sb-width: 5rem; 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -22,7 +33,7 @@ body.sb-expanded {
   --sb-width: 12.5rem; 
 }
 
-/* Sidebar Navigation */
+/*SIDEBAR NAVIGATION*/
 aside {
   grid-row: 1 / -1;
   padding: 1rem;
@@ -89,6 +100,7 @@ body.sb-expanded aside nav a span {
   visibility: visible;
 }
 
+/*TOP NAVIGATION*/
 body > nav {
   grid-column: 2;
   display: flex;
@@ -144,12 +156,668 @@ body > nav a:last-child:hover {
   border-color: #9ca3af;
 }
 
+/*MAIN CONTENT AREA*/
 main {
   grid-column: 2;
   padding: 2rem;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(100vh - 200px);
 }
 
+main h1 {
+  font-size: 32px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 30px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/*AUTHENTICATION OVERLAY*/
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  animation: modalSlideIn 0.25s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.auth-modal {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 32px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Close button */
+.auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #6e6e80;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 1;
+}
+
+.auth-close:hover {
+  background-color: #f0f0f0;
+  color: #2d333a;
+}
+
+/*AUTH FORM STYLES*/
+.auth-form {
+  width: 100%;
+}
+
+.auth-form fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+}
+
+.auth-form legend {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #2d333a;
+  text-align: center;
+  width: 100%;
+  display: block;
+  letter-spacing: -0.02em;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #2d333a;
+}
+
+/* AUTH FORM INPUTS - HIGHER SPECIFICITY */
+.auth-form input[type="text"],
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  background-color: #ffffff;
+  color: #2d333a;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.auth-form input[type="text"]:focus,
+.auth-form input[type="email"]:focus,
+.auth-form input[type="password"]:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form input[type="text"]::placeholder,
+.auth-form input[type="email"]::placeholder,
+.auth-form input[type="password"]::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/*ERROR MESSAGES*/
+.error-banner {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.error-banner small,
+.field-errors small {
+  color: #374151;
+  font-size: 13px;
+  display: block;
+  margin-top: 6px;
+}
+
+/*BUTTONS - FIXED SPECIFICITY FOR AUTH BUTTONS*/
+.auth-button-container {
+  margin-top: 24px;
+  margin-bottom: 20px;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #000000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  font-family: inherit;
+}
+
+.auth-submit-btn:hover {
+  background-color: #1a1a1a;
+}
+
+.auth-submit-btn:active {
+  transform: scale(0.98);
+}
+
+/*FOOTER*/
+.auth-footer {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.auth-footer small {
+  font-size: 14px;
+  color: #6e6e80;
+}
+
+.auth-footer a {
+  color: #000000;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/*SEARCH BAR STYLING (BASE.HTML)*/
+main > form {
+  position: relative;
+  max-width: 750px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 30px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+main > form:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border-color: #d0d0d0;
+}
+
+main > form:focus-within {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-color: #c0c0c0;
+}
+
+/* File Preview Inside Form */
+main > form .file-preview-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 8px 0;
+  padding: 0;
+  max-width: 100%;
+}
+
+/* Hide preview container when empty */
+main > form .file-preview-container:empty {
+  display: none;
+  margin: 0;
+}
+
+/* Input Row - Contains input and buttons */
+main > form .input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Plus Icon (Add Button) Styling */
+main > form .input-row .icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+main > form .input-row .icon-button:hover {
+  background-color: #f0f0f0;
+}
+
+main > form .input-row .icon-button img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+main > form .input-row .icon-button:hover img {
+  opacity: 0.7;
+}
+
+main > form .input-row input[type="text"] {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #333;
+  background: transparent;
+  padding: 6px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+main > form .input-row input[type="text"]::placeholder {
+  color: #a0a0a0;
+  font-weight: 400;
+}
+
+/* Microphone Button */
+main > form .input-row .mic-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-left: 4px;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+main > form .input-row .mic-button:hover {
+  background-color: #f0f0f0;
+}
+
+main > form .input-row .mic-button img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+main > form .input-row .mic-button:hover img {
+  opacity: 0.7;
+}
+
+/* Submit Button Styling */
+main > form .input-row button[type="submit"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: #000;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+main > form .input-row button[type="submit"]:hover {
+  background-color: #333;
+  transform: scale(1.05);
+}
+
+main > form .input-row button[type="submit"]:active {
+  transform: scale(0.95);
+}
+
+main > form .input-row button[type="submit"] img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+}
+
+/* Arrow icon specifically */
+main > form .input-row button[type="submit"] img[alt="Search"] {
+  transform: rotate(-90deg);
+  width: 20px;
+  height: 20px;
+}
+
+/* DOCUMENT/CHAT PAGE STYLES */
+.chat-container {
+  width: 100%;
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid #e5e7eb;
+  color: #333;
+  transition: all 0.2s ease;
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.file-chip:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.file-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+/* Remove all color coding - use only grayscale */
+.file-chip-icon.pdf,
+.file-chip-icon.doc,
+.file-chip-icon.docx,
+.file-chip-icon.jpg,
+.file-chip-icon.jpeg,
+.file-chip-icon.png,
+.file-chip-icon.gif,
+.file-chip-icon.webp,
+.file-chip-icon.xls,
+.file-chip-icon.xlsx,
+.file-chip-icon.csv,
+.file-chip-icon.zip,
+.file-chip-icon.rar,
+.file-chip-icon.ext-7z {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.file-chip-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.file-chip-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-chip-size {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.file-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.file-chip-remove:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.chat-input-form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 30px;
+  padding: 10px 14px;
+  gap: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.chat-input-form:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border-color: #d0d0d0;
+}
+
+.chat-input-form:focus-within {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-color: #c0c0c0;
+}
+
+/* File Preview Inside Chat Form */
+.chat-input-form .file-preview-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 8px 0;
+  padding: 0;
+  max-width: 100%;
+}
+
+/* Hide preview container when empty */
+.chat-input-form .file-preview-container:empty {
+  display: none;
+  margin: 0;
+}
+
+/* Input Row in Chat Form */
+.chat-input-form .input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hidden-input {
+  display: none !important;
+  visibility: hidden;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.icon-button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+}
+
+.icon-button:hover {
+  background-color: #f0f0f0;
+}
+
+.icon-button img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.icon-button:hover img {
+  opacity: 0.7;
+}
+
+.chat-input-form .input-row input[type="text"],
+.chat-input-form .input-row input[name="text_prompt"] {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #333;
+  background: transparent;
+  padding: 6px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.chat-input-form .input-row input[type="text"]::placeholder,
+.chat-input-form .input-row input[name="text_prompt"]::placeholder {
+  color: #a0a0a0;
+  font-weight: 400;
+}
+
+.chat-input-form .input-row .mic-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-left: 4px;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.chat-input-form .input-row .mic-button:hover {
+  background-color: #f0f0f0;
+}
+
+.chat-input-form .input-row .mic-button img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.chat-input-form .input-row .mic-button:hover img {
+  opacity: 0.7;
+}
+
+.chat-input-form .input-row .send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: #000;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.chat-input-form .input-row .send-button:hover {
+  background-color: #333;
+  transform: scale(1.05);
+}
+
+.chat-input-form .input-row .send-button:active {
+  transform: scale(0.95);
+}
+
+.chat-input-form .input-row .send-button img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+  transform: rotate(-90deg);
+}
+
+/*RESPONSIVE DESIGN*/
 @media (max-width: 768px) {
   body {
     --sb-width: 0;
@@ -171,5 +839,52 @@ main {
   
   main {
     grid-column: 1 / -1;
+  }
+
+  /* Search bar responsive */
+  main > form,
+  .chat-input-form {
+    max-width: 90%;
+    padding: 6px 12px;
+  }
+  
+  main > form input[type="text"],
+  .chat-input-form input[type="text"] {
+    font-size: 14px;
+  }
+  
+  main > form button[type="submit"],
+  .send-button {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-modal {
+    padding: 32px 24px;
+    border-radius: 16px;
+  }
+
+  .auth-form legend {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .auth-form input[type="text"],
+  .auth-form input[type="email"],
+  .auth-form input[type="password"] {
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+  
+  .auth-submit-btn {
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+
+  .auth-close {
+    top: 12px;
+    right: 12px;
   }
 }

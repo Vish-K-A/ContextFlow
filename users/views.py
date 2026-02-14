@@ -2,7 +2,7 @@ from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
 from .forms import UserRegistrationForm,LoginForm
 from .models import Profile
-from django.contrib.auth import login as auth_login
+from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib import messages
 
 # Create your views here.
@@ -40,3 +40,12 @@ def login_view(request):
         form=LoginForm()
 
     return render(request,"users/login.html",{'form': form})
+
+def logout_view(request):
+    if request.method == 'POST':
+        auth_logout(request)
+        messages.success(request, 'You have been successfully logged out!')
+        return redirect('homepage')
+    
+    # For GET requests, show the confirmation page
+    return render(request, 'users/logout.html')

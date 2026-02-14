@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Logout - ContextFlow{% endblock %}
+
+{% block content %}
+<div class="auth-overlay">
+    <div class="auth-container">
+        <div class="auth-modal">
+            <a href="{% url 'homepage' %}" class="auth-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </a>
+            
+            <fieldset style="border: none; padding: 0; margin: 0 0 24px 0;">
+                <legend style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #2d333a; text-align: center; width: 100%; display: block;">
+                    Logout
+                </legend>
+                
+                <div style="text-align: center; margin: 20px 0; color: #6e6e80; font-size: 15px;">
+                    <p>Are you sure you want to logout?</p>
+                </div>
+            </fieldset>
+            
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <div class="auth-button-container">
+                    <button type="submit" class="auth-submit-btn">Logout</button>
+                </div>
+            </form>
+            
+            <div class="auth-footer">
+                <small>
+                    Want to stay? <a href="{% url 'homepage' %}">Go Back</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
