@@ -22,6 +22,8 @@ class AdapteredEmbeddings(Embeddings):
     def __init__(self, base_embeddings: Embeddings, adapter_matrix: np.ndarray):
         self.base_embeddings = base_embeddings
         self.adapter_matrix = adapter_matrix
+        if adapter_matrix.shape[0] != adapter_matrix.shape[1]:
+            print(f"Warning: Non-square adapter matrix {adapter_matrix.shape}")
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         raw_embeddings = self.base_embeddings.embed_documents(texts)
@@ -33,15 +35,25 @@ class AdapteredEmbeddings(Embeddings):
 
     def _apply_matrix(self, vec: List[float]) -> List[float]:
         vec_np = np.array(vec)
+        vec_np = vec_np / (np.linalg.norm(vec_np) + 1e-8)
         projected = np.dot(self.adapter_matrix, vec_np)
+        projected = projected / (np.linalg.norm(projected) + 1e-8)
         return projected.tolist()
 
-def setup_vectorstore(file_path, adapter_matrix=None):
+def setup_vectorstore(file_path, adapter_matrix=None, collection_name="full_rag_pipeline"):
     loader = PyPDFLoader(file_path)
     docs = loader.load()
 
-    child_splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
-    parent_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
+    child_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=400, 
+        chunk_overlap=50,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+    parent_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=2000, 
+        chunk_overlap=200,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
 
     base_embeddings = OpenAIEmbeddings()
     if adapter_matrix is not None:
@@ -50,7 +62,7 @@ def setup_vectorstore(file_path, adapter_matrix=None):
         final_embeddings = base_embeddings
 
     vectorstore = Chroma(
-        collection_name="full_rag_pipeline",
+        collection_name=collection_name,
         embedding_function=final_embeddings
     )
 
@@ -66,8 +78,7 @@ def setup_vectorstore(file_path, adapter_matrix=None):
     retriever.add_documents(docs, ids=None)
     return retriever
 
-def get_advanced_chain(base_retriever, model_name="gpt-3.5-turbo"):
-    
+def get_advanced_chain(base_retriever, model_name="gpt-4o-mini", top_n=5):
     llm = ChatOpenAI(temperature=0, model=model_name)
 
     multi_query_retriever = MultiQueryRetriever.from_llm(
@@ -76,7 +87,7 @@ def get_advanced_chain(base_retriever, model_name="gpt-3.5-turbo"):
     )
 
     model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
-    compressor = CrossEncoderReranker(model=model, top_n=5)
+    compressor = CrossEncoderReranker(model=model, top_n=top_n)
     
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor, 
@@ -92,32 +103,36 @@ def get_advanced_chain(base_retriever, model_name="gpt-3.5-turbo"):
     
     return qa_chain
 
-def train_embedding_adaptor(dataset):
+def train_embedding_adaptor(dataset, embedding_dim=1536, epochs=100, lr=0.001):
 
-    mat_size = len(dataset[0][0])
-    adapter_matrix = torch.randn(mat_size, mat_size, requires_grad=True)
-    optimizer = torch.optim.Adam([adapter_matrix], lr=0.01)
+    adapter_matrix = torch.randn(embedding_dim, embedding_dim, requires_grad=True)
+    optimizer = torch.optim.Adam([adapter_matrix], lr=lr)
     criterion = torch.nn.MSELoss()
 
-    for epoch in range(100):
+    for epoch in range(epochs):
         total_loss = 0
-        for query_emb, doc_emb, label in dataset:
+        for query_emb, doc_emb, relevance_score in dataset:
             q_tensor = torch.tensor(query_emb, dtype=torch.float32)
             d_tensor = torch.tensor(doc_emb, dtype=torch.float32)
-            lbl_tensor = torch.tensor(label, dtype=torch.float32)
+            target = torch.tensor([relevance_score], dtype=torch.float32)
             
             updated_query = torch.matmul(adapter_matrix, q_tensor)
+            updated_query = torch.nn.functional.normalize(updated_query, dim=0)
+            d_tensor = torch.nn.functional.normalize(d_tensor, dim=0)
+            cosine_sim = torch.nn.functional.cosine_similarity(
+                updated_query.unsqueeze(0), 
+                d_tensor.unsqueeze(0)
+            )
             
-            cosine_sim = torch.nn.functional.cosine_similarity(updated_query.unsqueeze(0), d_tensor.unsqueeze(0))
-            
-            loss = criterion(cosine_sim, lbl_tensor)
+            loss = criterion(cosine_sim, target)
             
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             total_loss += loss.item()
-            
-        print(f"Epoch {epoch}: Loss {total_loss}")
+        
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch}: Avg Loss {total_loss/len(dataset):.4f}")
 
     return adapter_matrix.detach().numpy()
