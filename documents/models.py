@@ -3,28 +3,39 @@ from django.core.validators import FileExtensionValidator
 from django.contrib.auth.models import User
 
 
-# Create your models here.
+class Conversation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_pdf_path = models.CharField(max_length=500, blank=True)
+    
+    def __str__(self):
+        return f"Conversation {self.id} - {self.user.username if self.user else 'Anonymous'}"
+
+
 class Message(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,null=True,blank=True)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, null=True, blank=True, related_name='messages')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     text = models.TextField(blank=True)
+    is_ai_response = models.BooleanField(default=False) 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['created_at']
 
     def __str__(self):
-        return f"Message {self.id} by {self.user.username if self.user else 'Anonymous'}"
+        return f"Message {self.id} by {self.user.username if self.user else 'AI'}"
 
-    
 
 class Attachment(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='attachments')
-    user = models.ForeignKey(User,on_delete=models.CASCADE,null=True,blank=True)
-    file = models.FileField(upload_to='uploads/%Y/%m/%d/', validators=[FileExtensionValidator(allowed_extensions=['pdf', 'png', 'jpg', 'gif', 'webp','doc', 'docx', 'txt', 'md','xls', 'xlsx', 'csv','mp4', 'mov', 'avi' ])])
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    file = models.FileField(
+        upload_to='uploads/pdfs/%Y/%m/%d/',   
+        validators=[FileExtensionValidator(allowed_extensions=['pdf'])]  
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    file_size = models.BigIntegerField(default=0)  
-    file_type = models.CharField(max_length=100, blank=True)  
+    file_size = models.BigIntegerField(default=0)
     description = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -36,5 +47,4 @@ class Attachment(models.Model):
     def save(self, *args, **kwargs):
         if self.file:
             self.file_size = self.file.size
-            self.file_type = self.file.name.split('.')[-1].lower()
         super().save(*args, **kwargs)

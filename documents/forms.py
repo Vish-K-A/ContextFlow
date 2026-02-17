@@ -18,25 +18,31 @@ class MultipleFileField(forms.FileField):
         return result
     
 class FileFieldForm(forms.Form):
-    text_prompt = forms.CharField(widget=forms.Textarea,required = False)
-    file_field = MultipleFileField(required=False, label='Attachments')
+    text_prompt = forms.CharField(widget=forms.Textarea, required=False)
+    file_field = MultipleFileField(
+        required=False, 
+        label='PDF Attachments',
+        widget=MultipleFileInput(attrs={
+            'accept': '.pdf' 
+        })
+    )
 
     def clean_file_field(self):
         files = self.cleaned_data.get('file_field', [])
         
-        max_size = 50 * 1024 * 1024  
         for file in files:
-            if file.size > max_size:
-                raise ValidationError(
-                    f'File {file.name} is too large. Maximum size is 50MB.'
-                )
+            if not file.name.lower().endswith('.pdf'):
+                raise ValidationError(f'{file.name} is not a PDF file. Only PDFs are supported.')
+            
+            if hasattr(file, 'content_type') and file.content_type != 'application/pdf':
+                raise ValidationError(f'{file.name} does not appear to be a valid PDF.')
+            
+            if file.size > 50 * 1024 * 1024:
+                raise ValidationError(f'{file.name} is too large. Maximum size is 50MB.')
         
         total_size = sum(file.size for file in files)
-        max_total_size = 200 * 1024 * 1024  
-        if total_size > max_total_size:
-            raise ValidationError(
-                f'Total upload size exceeds 200MB limit.'
-            )
+        if total_size > 200 * 1024 * 1024:  
+            raise ValidationError('Total upload size exceeds 200MB limit.')
         
         return files
 
@@ -46,8 +52,6 @@ class FileFieldForm(forms.Form):
         file_field = cleaned_data.get('file_field', [])
         
         if not text_prompt and not file_field:
-            raise ValidationError(
-                'Please provide either a message or upload at least one file.'
-            )
+            raise ValidationError('Please provide either a message or upload at least one PDF.')
         
         return cleaned_data

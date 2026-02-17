@@ -5,14 +5,13 @@ from typing import List, Any
 from dotenv import load_dotenv, find_dotenv
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.retrievers import ParentDocumentRetriever, ContextualCompressionRetriever
-from langchain_community.document_compressors import CrossEncoderReranker
+from langchain_classic.retrievers import ParentDocumentRetriever, ContextualCompressionRetriever, MultiQueryRetriever
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
+from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_classic.chains import ConversationalRetrievalChain
-from langchain_core.stores import InMemoryStore
-from langchain_community.retrievers import MultiQueryRetriever
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_core.stores import InMemoryStore
 from langchain_core.embeddings import Embeddings
 
 _ = load_dotenv(find_dotenv())
@@ -40,17 +39,24 @@ class AdapteredEmbeddings(Embeddings):
         projected = projected / (np.linalg.norm(projected) + 1e-8)
         return projected.tolist()
 
-def setup_vectorstore(file_path, adapter_matrix=None, collection_name="full_rag_pipeline"):
+import hashlib
+
+_retriever_cache: dict = {}
+
+def setup_vectorstore(file_path, adapter_matrix=None):
+    if file_path in _retriever_cache:
+        return _retriever_cache[file_path]
+
     loader = PyPDFLoader(file_path)
     docs = loader.load()
 
     child_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=400, 
+        chunk_size=400,
         chunk_overlap=50,
         separators=["\n\n", "\n", ". ", " ", ""]
     )
     parent_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=2000, 
+        chunk_size=2000,
         chunk_overlap=200,
         separators=["\n\n", "\n", ". ", " ", ""]
     )
@@ -60,6 +66,9 @@ def setup_vectorstore(file_path, adapter_matrix=None, collection_name="full_rag_
         final_embeddings = AdapteredEmbeddings(base_embeddings, adapter_matrix)
     else:
         final_embeddings = base_embeddings
+
+    doc_hash = hashlib.md5(file_path.encode()).hexdigest()[:12]
+    collection_name = f"doc_{doc_hash}"
 
     vectorstore = Chroma(
         collection_name=collection_name,
@@ -74,8 +83,10 @@ def setup_vectorstore(file_path, adapter_matrix=None, collection_name="full_rag_
         child_splitter=child_splitter,
         parent_splitter=parent_splitter
     )
-    
+
     retriever.add_documents(docs, ids=None)
+
+    _retriever_cache[file_path] = retriever
     return retriever
 
 def get_advanced_chain(base_retriever, model_name="gpt-4o-mini", top_n=5):
