@@ -5,269 +5,280 @@
 
 {% block content %}
 <div class="files-page">
-    <div class="files-header">
-        <div>
-            <h1>Files</h1>
-            <p class="files-count" id="filesCount">{{ total_files }} file{{ total_files|pluralize }}</p>
-        </div>
-        <a href="{% url 'documents' %}" class="btn-new">+ New upload</a>
+  <div class="files-header">
+    <div>
+      <h1>Files</h1>
+      <p class="files-count" id="filesCount">{{ total_files }} file{{ total_files|pluralize }}</p>
     </div>
+    <a href="{% url 'documents' %}" class="btn-new">+ New upload</a>
+  </div>
 
-    <div class="search-box">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M7.33 12.67C10.28 12.67 12.67 10.28 12.67 7.33C12.67 4.39 10.28 2 7.33 2C4.39 2 2 4.39 2 7.33C2 10.28 4.39 12.67 7.33 12.67Z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M14 14L11.1 11.1" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <input type="text" id="search" placeholder="Search your files...">
+  <div class="search-box">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M7.33 12.67C10.28 12.67 12.67 10.28 12.67 7.33C12.67 4.39 10.28 2 7.33 2C4.39 2 2 4.39 2 7.33C2 10.28 4.39 12.67 7.33 12.67Z" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M14 14L11.1 11.1" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+    <input type="text" id="search" placeholder="Search your files...">
+  </div>
+
+  {% if files %}
+    <div class="files-list" id="filesList">
+      {% for attachment in files %}
+      <div class="file-item" data-id="{{ attachment.id }}" data-search="{{ attachment.file.name|slice:'19:'|lower }}">
+        <div class="file-icon">PDF</div>
+        <div class="file-info">
+          <a href="{% url 'load_file_in_chat' attachment.id %}" class="file-name-link">{{ attachment.file.name|slice:"19:" }}</a>
+          <div class="file-meta">{{ attachment.uploaded_at|date:"M d, Y" }}</div>
+        </div>
+        
+        <a href="{{ attachment.file.url }}" download class="file-action" title="Download">
+          <img src="{% static 'images/download.svg' %}" width="16" height="16" alt="Download">
+        </a>
+        
+        <button type="button" class="delete-btn file-action" data-id="{{ attachment.id }}" title="Delete">
+          <img src="{% static 'images/delete.svg' %}" width="16" height="16" alt="Delete">
+        </button>
+      </div>
+      {% endfor %}
     </div>
-
-    {% if files %}
-        <div class="files-list" id="filesList">
-            {% for attachment in files %}
-            <div class="file-item" data-search="{{ attachment.file.name|slice:'19:'|lower }} {{ attachment.message.text|default:''|lower }}">
-                <div class="file-icon">{{ attachment.file_type|upper }}</div>
-                <div class="file-info">
-                    <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.file.name|slice:"19:" }}</a>
-                    <div class="file-meta">
-                        {% if attachment.message.text %}{{ attachment.message.text|truncatewords:10 }} • {% endif %}
-                        {{ attachment.uploaded_at|date:"M d, Y" }}
-                    </div>
-                </div>
-                <a href="{{ attachment.file.url }}" download class="file-download">↓</a>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="no-results" id="noResults">
-            <h2>No files found</h2>
-            <p>Try a different search term</p>
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <h2>No files yet</h2>
-            <p>Upload your first file to get started</p>
-            <a href="{% url 'documents' %}" class="btn-upload">Upload Files</a>
-        </div>
-    {% endif %}
+    
+    <div class="no-results" id="noResults">
+      <h2>No files found</h2>
+      <p>Try a different search term</p>
+    </div>
+  {% else %}
+    <div class="files-list" id="filesList">
+      <div class="empty-state">
+        <h2>No files yet</h2>
+        <p>Upload your first file to get started</p>
+        <a href="{% url 'documents' %}" class="btn-upload">Upload Files</a>
+      </div>
+    </div>
+    <div class="no-results" id="noResults">
+      <h2>No files found</h2>
+      <p>Try a different search term</p>
+    </div>
+  {% endif %}
 </div>
 
 <style>
 .files-page {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem 3rem;
-    background: #fff;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2rem 3rem;
+  background: #fff;
 }
 
 .files-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .files-header h1 {
-    font-size: 28px;
-    font-weight: 600;
-    color: #000;
-    margin: 0 0 0.25rem 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 0.25rem 0;
 }
 
 .files-count {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
+  font-size: 14px;
+  color: #666;
+  margin: 0;
 }
 
 .btn-new {
-    background: #000;
-    color: #fff;
-    padding: 0.625rem 1.125rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
+  background: #000;
+  color: #fff;
+  padding: 0.625rem 1.125rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.btn-new:hover {
-    background: #333;
-}
+.btn-new:hover { background: #333; }
 
 .search-box {
-    position: relative;
-    margin-bottom: 1.25rem;
+  position: relative;
+  margin-bottom: 1.25rem;
+  width: 100%;
 }
 
 .search-box svg {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #999;
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
 }
 
 .search-box input {
-    width: 100%;
-    padding: 0.875rem 1rem 0.875rem 2.75rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 15px;
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
 }
 
 .search-box input:focus {
-    outline: none;
-    border-color: #000;
+  outline: none;
+  border-color: #000;
 }
 
 .files-list {
-    flex: 1;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  width: 100%;
+  min-width: 0;
 }
 
-.files-list::-webkit-scrollbar {
-    width: 8px;
-}
-
+.files-list::-webkit-scrollbar { width: 8px; }
 .files-list::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
+  background: #ccc;
+  border-radius: 4px;
 }
 
 .file-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  min-width: 0;
 }
 
-.file-item:last-child {
-    border-bottom: none;
-}
-
-.file-item:hover {
-    background: #fafafa;
-}
-
-.file-item.hidden {
-    display: none;
-}
+.file-item:last-child { border-bottom: none; }
+.file-item:hover { background: #fafafa; }
+.file-item.hidden { display: none; }
 
 .file-icon {
-    width: 44px;
-    height: 44px;
-    background: #f5f5f5;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 600;
-    color: #666;
+  width: 44px;
+  height: 44px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  flex-shrink: 0;
 }
 
 .file-info {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
-.file-info a {
-    color: #000;
-    text-decoration: none;
-    font-size: 14.5px;
-    font-weight: 500;
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.file-name-link {
+  color: #000;
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
 }
 
-.file-info a:hover {
-    text-decoration: underline;
+.file-name-link:hover {
+  color: #666;
+  text-decoration: underline;
 }
 
 .file-meta {
-    font-size: 13px;
-    color: #666;
-    margin-top: 0.25rem;
+  font-size: 13px;
+  color: #666;
+  margin-top: 0.25rem;
 }
 
-.file-download {
-    width: 36px;
-    height: 36px;
-    background: #f5f5f5;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    color: #333;
-    font-size: 18px;
+.file-action {
+  width: 36px;
+  height: 36px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.file-download:hover {
-    background: #e5e5e5;
+.file-action:hover {
+  background: #e5e5e5;
+  color: #333;
 }
 
 .no-results {
-    display: none;
-    text-align: center;
-    padding: 4rem 2rem;
+  display: none;
+  text-align: center;
+  padding: 4rem 2rem;
 }
 
-.no-results.show {
-    display: block;
-}
+.no-results.show { display: block; }
 
 .no-results h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #000;
-    margin-bottom: 0.5rem;
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 0.5rem;
 }
 
-.no-results p {
-    color: #666;
-}
+.no-results p { color: #666; }
 
 .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  padding: 4rem 2rem;
+  text-align: center;
 }
 
 .empty-state h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #000;
-    margin-bottom: 0.5rem;
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 0.5rem;
 }
 
 .empty-state p {
-    color: #666;
-    margin-bottom: 1.5rem;
+  color: #666;
+  margin-bottom: 1.5rem;
 }
 
 .btn-upload {
-    display: inline-block;
-    background: #000;
-    color: #fff;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.btn-upload:hover {
-    background: #333;
-}
+.btn-upload:hover { background: #333; }
 </style>
 
 <script>
@@ -277,32 +288,74 @@ const noResults = document.getElementById('noResults');
 const filesCount = document.getElementById('filesCount');
 
 if (search && filesList) {
-    const items = filesList.querySelectorAll('.file-item');
-    const total = items.length;
+  const items = filesList.querySelectorAll('.file-item');
+  const total = items.length;
+  
+  search.oninput = (e) => {
+    const term = e.target.value.toLowerCase().trim();
+    let count = 0;
     
-    search.oninput = (e) => {
-        const term = e.target.value.toLowerCase().trim();
-        let count = 0;
-        
-        items.forEach(item => {
-            const text = item.dataset.search || '';
-            if (text.includes(term)) {
-                item.classList.remove('hidden');
-                count++;
-            } else {
-                item.classList.add('hidden');
-            }
-        });
-        
-        if (filesCount) {
-            filesCount.textContent = term ? `${count} of ${total} file${total !== 1 ? 's' : ''}` : `${total} file${total !== 1 ? 's' : ''}`;
-        }
-        
-        if (noResults) {
-            noResults.className = count === 0 && term ? 'no-results show' : 'no-results';
-            filesList.style.display = count === 0 && term ? 'none' : 'flex';
-        }
-    };
+    items.forEach(item => {
+      const text = item.dataset.search || '';
+      if (text.includes(term)) {
+        item.classList.remove('hidden');
+        count++;
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+    
+    if (filesCount) {
+      filesCount.textContent = term 
+        ? `${count} of ${total} file${total !== 1 ? 's' : ''}` 
+        : `${total} file${total !== 1 ? 's' : ''}`;
+    }
+    
+    if (noResults) {
+      noResults.className = count === 0 && term ? 'no-results show' : 'no-results';
+      filesList.style.display = count === 0 && term ? 'none' : 'block';
+    }
+  };
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.delete-btn')) {
+    const btn = e.target.closest('.delete-btn');
+    const fileId = btn.dataset.id;
+    const fileItem = btn.closest('.file-item');
+    
+    if (!confirm('Are you sure you want to delete this file?')) return;
+    
+    const deleteUrl = "{% url 'delete_file' 0 %}".replace('0', fileId);
+    
+    fetch(deleteUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        fileItem.style.opacity = '0';
+        setTimeout(() => {
+          fileItem.remove();
+          updateCount();
+          if (filesList.querySelectorAll('.file-item').length === 0) {
+            location.reload();
+          }
+        }, 200);
+      } else {
+        alert('Error deleting file: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(() => alert('Failed to delete file'));
+  }
+});
+
+function updateCount() {
+  const remaining = filesList.querySelectorAll('.file-item:not(.hidden)').length;
+  filesCount.textContent = `${remaining} file${remaining !== 1 ? 's' : ''}`;
 }
 </script>
 {% endblock %}

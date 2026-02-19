@@ -5,11 +5,15 @@ from django.contrib.auth.models import User
 
 class Conversation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    title = models.CharField(max_length=200, default="New conversation") 
     created_at = models.DateTimeField(auto_now_add=True)
     last_pdf_path = models.CharField(max_length=500, blank=True)
     
+    class Meta:
+        ordering = ['-created_at']  
+    
     def __str__(self):
-        return f"Conversation {self.id} - {self.user.username if self.user else 'Anonymous'}"
+        return f"{self.title} - {self.user.username if self.user else 'Anonymous'}"
 
 
 class Message(models.Model):

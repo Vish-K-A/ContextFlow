@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chats - ContextFlow{% endblock %}
+
+{% block content %}
+<div class="chats-page">
+  <div class="chats-header">
+    <div>
+      <h1>Chats</h1>
+      <p class="chats-count" id="chatsCount">{{ total_chats }} chat{{ total_chats|pluralize }} with ContextFlow</p>
+    </div>
+    <a href="{% url 'new_conversation' %}" class="btn-new-chat">+ New chat</a>
+  </div>
+
+  <div class="search-box">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M7.33 12.67C10.28 12.67 12.67 10.28 12.67 7.33C12.67 4.39 10.28 2 7.33 2C4.39 2 2 4.39 2 7.33C2 10.28 4.39 12.67 7.33 12.67Z" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M14 14L11.1 11.1" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+    <input type="text" id="searchChats" placeholder="Search your chats...">
+  </div>
+
+  {% if conv_data %}
+    <div class="chats-list" id="chatsList">
+      {% for conv in conv_data %}
+      <div class="chat-item" data-id="{{ conv.id }}" data-search="{{ conv.title|lower }}">
+        <a href="{% url 'load_conversation' conv.id %}" class="chat-link">
+          <div class="chat-content">
+            <h3 class="chat-title">{{ conv.title }}</h3>
+            <p class="chat-preview">{{ conv.preview|default:"No messages yet" }}</p>
+          </div>
+          <span class="chat-meta">{{ conv.created_at|date:"M d, H:i" }} &middot; {{ conv.message_count }} msg{{ conv.message_count|pluralize }}</span>
+        </a>
+        <button type="button" class="chat-delete-btn" data-id="{{ conv.id }}" title="Delete">
+          <img src="{% static 'images/delete.svg' %}" width="16" height="16" alt="Delete">
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="chats-list empty-list">
+      <div class="empty-chats">
+        <h2>No chats yet</h2>
+        <p>Start a new conversation with ContextFlow</p>
+        <a href="{% url 'new_conversation' %}" class="btn-start-chat">Start chatting</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+.chats-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2rem 3rem;
+  background: #fff;
+}
+
+.chats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.chats-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 0.25rem 0;
+}
+
+.chats-count {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.btn-new-chat {
+  background: #000;
+  color: #fff;
+  padding: 0.625rem 1.125rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.btn-new-chat:hover { background: #333; }
+
+.search-box {
+  position: relative;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.chats-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  width: 100%;
+  min-width: 0;
+}
+
+.chats-list::-webkit-scrollbar { width: 8px; }
+.chats-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+  min-width: 0;
+}
+
+.chat-item:last-child { border-bottom: none; }
+.chat-item:hover { background: #fafafa; }
+.chat-item.hidden { display: none; }
+
+.chat-link {
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.chat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-title {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 0 0 0.25rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-preview {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 0.2rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-meta {
+  font-size: 11.5px;
+  color: #aaa;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  padding-left: 1rem;
+}
+
+/* Matches file-action style from files.html exactly */
+.chat-delete-btn {
+  width: 36px;
+  height: 36px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  opacity: 1;
+}
+
+.chat-delete-btn:hover {
+  background: #e5e5e5;
+  color: #333;
+}
+
+.empty-chats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-chats h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 0.5rem;
+}
+
+.empty-chats p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.btn-start-chat {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-start-chat:hover { background: #333; }
+</style>
+
+<script>
+const searchInput = document.getElementById('searchChats');
+const chatsList = document.getElementById('chatsList');
+const chatsCount = document.getElementById('chatsCount');
+
+if (searchInput && chatsList) {
+  const items = chatsList.querySelectorAll('.chat-item');
+  const total = items.length;
+  
+  searchInput.oninput = (e) => {
+    const term = e.target.value.toLowerCase().trim();
+    let count = 0;
+    
+    items.forEach(item => {
+      const text = item.dataset.search || '';
+      if (text.includes(term)) {
+        item.classList.remove('hidden');
+        count++;
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+    
+    if (chatsCount) {
+      chatsCount.textContent = term
+        ? `${count} of ${total} chat${total !== 1 ? 's' : ''} with ContextFlow`
+        : `${total} chat${total !== 1 ? 's' : ''} with ContextFlow`;
+    }
+  };
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.chat-delete-btn')) {
+    e.preventDefault();
+    const btn = e.target.closest('.chat-delete-btn');
+    const chatId = btn.dataset.id;
+    const chatItem = btn.closest('.chat-item');
+    
+    if (!confirm('Delete this conversation?')) return;
+    
+    fetch(`/documents/conversation/${chatId}/delete/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        chatItem.style.transition = 'opacity 0.2s';
+        chatItem.style.opacity = '0';
+        setTimeout(() => {
+          chatItem.remove();
+          const remaining = chatsList ? chatsList.querySelectorAll('.chat-item').length : 0;
+          if (remaining === 0) location.reload();
+          else if (chatsCount) {
+            chatsCount.textContent = `${remaining} chat${remaining !== 1 ? 's' : ''} with ContextFlow`;
+          }
+        }, 200);
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

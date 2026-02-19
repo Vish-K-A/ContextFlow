@@ -7,7 +7,8 @@
 
 <style>
   main {
-    justify-content: flex-start !important;
+    display: flex !important;
+    justify-content: center !important;
     align-items: center !important;
     padding: 0 !important;
     height: calc(100vh - 53px);
@@ -20,18 +21,20 @@
     width: 100%;
     max-width: 750px;
     height: 100%;
-    padding: 0 1rem;
+    padding: 0 2rem;
     position: relative;
   }
 
+  .chat-page.welcome-mode {
+    justify-content: center;
+    gap: 2rem;
+  }
+
   .welcome-state {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding-bottom: 120px;
     transition: opacity 0.3s ease;
   }
 
@@ -43,12 +46,7 @@
     color: #1a1a1a;
     text-align: center;
     letter-spacing: -0.02em;
-  }
-
-  .welcome-sub {
-    font-size: 14px;
-    color: #888;
-    text-align: center;
+    margin: 0;
   }
 
   .chat-messages {
@@ -59,10 +57,16 @@
     flex-direction: column;
     gap: 0;
     scroll-behavior: smooth;
+    min-height: 0;
   }
 
-  .chat-messages:empty { display: none; }
-  .chat-messages:empty ~ .welcome-state { display: flex; }
+  .chat-page.welcome-mode .chat-messages {
+    display: none;
+  }
+
+  .chat-page.welcome-mode .thinking-row {
+    display: none !important;
+  }
 
   .chat-messages::-webkit-scrollbar { width: 4px; }
   .chat-messages::-webkit-scrollbar-thumb {
@@ -82,10 +86,9 @@
   }
 
   .msg-row.user { justify-content: flex-end; }
-  .msg-row.ai   { justify-content: flex-start; }
+  .msg-row.ai   { justify-content: flex-start; flex-direction: column; gap: 0.35rem; }
 
   .msg-row.user .bubble {
-    max-width: 72%;
     background: #f4f4f4;
     border-radius: 18px 18px 4px 18px;
     padding: 0.75rem 1rem;
@@ -94,57 +97,52 @@
     color: #1a1a1a;
     white-space: pre-wrap;
     word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .msg-row.user > div {
+    max-width: 72%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
   }
 
   .user-files {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.4rem;
-    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+    justify-content: flex-end;
   }
 
   .attached-chip {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    gap: 8px;
+    background: #f4f4f4;
+    border: 1px solid #e5e5e5;
     border-radius: 10px;
-    font-size: 12.5px;
-    color: #374151;
-    max-width: 240px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 6px 10px;
   }
 
-  .attached-chip .chip-icon {
-    width: 28px;
-    height: 28px;
-    background: #f3f4f6;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .chip-icon {
     font-size: 9px;
     font-weight: 700;
-    color: #6b7280;
-    text-transform: uppercase;
+    background: #e0e0e0;
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #555;
     letter-spacing: 0.03em;
-    flex-shrink: 0;
   }
 
-  .attached-chip .chip-name {
-    font-weight: 500;
+  .chip-name {
+    font-size: 12.5px;
+    color: #333;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 160px;
-  }
-
-  .msg-row.ai {
-    flex-direction: column;
-    gap: 0.35rem;
   }
 
   .ai-header {
@@ -177,10 +175,74 @@
     font-size: 14.5px;
     line-height: 1.75;
     color: #1a1a1a;
-    white-space: pre-wrap;
     word-break: break-word;
-    padding: 0.25rem 0 0 2rem;
+    overflow-wrap: break-word;
+    padding: 0.35rem 0 0 2rem;
+    max-width: 100%;
   }
+
+  .msg-row.ai .bubble p { margin: 0 0 0.75rem 0; }
+  .msg-row.ai .bubble p:last-child { margin-bottom: 0; }
+  .msg-row.ai .bubble h1, .msg-row.ai .bubble h2, .msg-row.ai .bubble h3 {
+    font-weight: 600;
+    margin: 1rem 0 0.4rem;
+    line-height: 1.3;
+  }
+  .msg-row.ai .bubble h1 { font-size: 1.2em; }
+  .msg-row.ai .bubble h2 { font-size: 1.1em; }
+  .msg-row.ai .bubble h3 { font-size: 1em; }
+  .msg-row.ai .bubble ul, .msg-row.ai .bubble ol {
+    padding-left: 1.4rem;
+    margin: 0.4rem 0 0.75rem;
+  }
+  .msg-row.ai .bubble li { margin-bottom: 0.3rem; }
+  .msg-row.ai .bubble strong { font-weight: 600; }
+  .msg-row.ai .bubble em { font-style: italic; }
+  .msg-row.ai .bubble hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; }
+
+  .msg-row.ai .bubble code {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.88em;
+    color: #d63384;
+  }
+
+  .msg-row.ai .bubble pre {
+    background: #1e1e2e;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    position: relative;
+  }
+
+  .msg-row.ai .bubble pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #cdd6f4;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .code-block-wrap { position: relative; }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 5px;
+    color: #aaa;
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
 
   .msg-time {
     font-size: 10.5px;
@@ -208,7 +270,7 @@
   .thinking-dots {
     display: flex;
     gap: 4px;
-    padding-left: 2rem;
+    padding-left: 0.5rem;
   }
 
   .thinking-dots span {
@@ -233,31 +295,28 @@
   }
 
   .input-area {
-    padding: 0.75rem 0 1.25rem;
-    background: linear-gradient(to top, #fff 80%, transparent);
+    padding: 0 0 1rem;
     flex-shrink: 0;
+    width: 100%;
   }
 
-  .file-preview-container {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+  .chat-page:not(.welcome-mode) .input-area {
+    background: linear-gradient(180deg, transparent 0%, #fff 25%);
+    padding-top: 0.5rem;
   }
 
-  .file-preview-container:empty { display: none; }
-
-  
   .chat-input-form {
     display: flex;
     flex-direction: column;
     background: #fff;
     border: 1px solid #e0e0e0;
-    border-radius: 30px;
+    border-radius: 20px;
     padding: 10px 14px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     transition: all 0.3s ease;
     gap: 0;
+    max-width: 700px;
+    margin: 0 auto;
   }
 
   .chat-input-form:hover {
@@ -269,6 +328,70 @@
     box-shadow: 0 4px 14px rgba(0,0,0,0.12);
     border-color: #c0c0c0;
   }
+
+  .file-preview-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 4px 4px 8px 4px;
+  }
+
+  .file-preview-container:empty { display: none; }
+
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f5f5f5;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 6px 10px 6px 8px;
+    max-width: 220px;
+  }
+
+  .file-chip-icon {
+    font-size: 9px;
+    font-weight: 700;
+    background: #e0e0e0;
+    border-radius: 4px;
+    padding: 3px 6px;
+    color: #555;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .file-chip-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-chip-name {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-chip-size {
+    font-size: 11px;
+    color: #888;
+  }
+
+  .file-chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+
+  .file-chip-remove:hover { color: #333; }
 
   .input-row {
     display: flex;
@@ -294,6 +417,23 @@
 
   .input-row textarea::placeholder { color: #a0a0a0; }
 
+  .icon-button, .mic-button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .icon-button:hover, .mic-button:hover { background: #f5f5f5; }
+
   .send-btn {
     display: flex;
     align-items: center;
@@ -305,7 +445,7 @@
     border-radius: 50%;
     cursor: pointer;
     flex-shrink: 0;
-    margin-left: 8px;
+    margin-left: 4px;
     transition: all 0.2s ease;
     padding: 0;
   }
@@ -313,9 +453,7 @@
   .send-btn:hover { background: #333; transform: scale(1.05); }
   .send-btn:active { transform: scale(0.95); }
   .send-btn:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
-
   .send-btn svg { width: 16px; height: 16px; }
-
   .send-btn.loading svg { display: none; }
   .send-btn.loading::after {
     content: '';
@@ -329,20 +467,12 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .input-hint {
-    text-align: center;
-    font-size: 11px;
-    color: #c0c0c0;
-    margin-top: 0.5rem;
-  }
-
   #fileInput { display: none; }
 </style>
 
-<div class="chat-page">
+<div class="chat-page" id="chatPage">
   <div class="welcome-state" id="welcomeState">
     <h1 class="welcome-heading">Where should we begin?</h1>
-    <p class="welcome-sub">Upload a PDF and ask anything about it.</p>
   </div>
 
   <div class="chat-messages" id="chatMessages">
@@ -355,12 +485,12 @@
             </div>
             <span class="ai-name">ContextFlow</span>
           </div>
-          <div class="bubble">{{ message.text }}</div>
+          <div class="bubble" data-raw="{{ message.text }}"></div>
           <div class="msg-time">{{ message.created_at|date:"M d, H:i" }}</div>
         </div>
       {% else %}
         <div class="msg-row user">
-          <div style="display:flex;flex-direction:column;align-items:flex-end;max-width:72%">
+          <div>
             <div class="bubble">{{ message.text }}</div>
             <div class="msg-time">{{ message.created_at|date:"M d, H:i" }}</div>
           </div>
@@ -370,33 +500,32 @@
   </div>
 
   <div class="thinking-row" id="thinkingRow">
-    <div class="ai-avatar" style="width:24px;height:24px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-      <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:white"><path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9zm-1 13H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+    <div class="ai-avatar">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:white">
+        <path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9zm-1 13H9V8h2v8zm4 0h-2V8h2v8z"/>
+      </svg>
     </div>
-    <div class="thinking-dots">
-      <span></span><span></span><span></span>
-    </div>
+    <div class="thinking-dots"><span></span><span></span><span></span></div>
     <span class="thinking-text">Thinking…</span>
   </div>
 
   <div class="input-area">
     <form id="chatForm" method="post" enctype="multipart/form-data">
       {% csrf_token %}
-      <input type="file" id="fileInput" name="file_field" multiple accept=".pdf">
-
-      <div class="file-preview-container" id="filePreview"></div>
+      <input type="file" id="fileInput" name="file_field" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.txt">
 
       <div class="chat-input-form">
-        <div class="input-row">
+        <div class="file-preview-container" id="filePreview"></div>
 
-          <button type="button" class="icon-button" id="attachBtn" title="Attach PDF">
+        <div class="input-row">
+          <button type="button" class="icon-button" id="attachBtn" title="Attach file">
             <img src="{% static 'images/add.svg' %}" width="20" height="20" alt="Add">
           </button>
 
           <textarea
             id="promptInput"
             name="text_prompt"
-            placeholder="Ask anything…"
+            placeholder="Ask anything"
             rows="1"
             autocomplete="off"
           ></textarea>
@@ -411,30 +540,68 @@
               <polyline points="5 12 12 5 19 12"/>
             </svg>
           </button>
-
         </div>
       </div>
     </form>
-    <p class="input-hint">Upload a PDF + type your question, or just ask a follow-up.</p>
   </div>
-
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+
 <script>
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+
+  function renderMarkdown(text) {
+    return marked.parse(text);
+  }
+
+  function wrapCodeBlocks(el) {
+    el.querySelectorAll('pre').forEach(pre => {
+      if (pre.parentElement.classList.contains('code-block-wrap')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'code-block-wrap';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(pre.innerText).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2000);
+        });
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  document.querySelectorAll('.msg-row.ai .bubble[data-raw]').forEach(el => {
+    const raw = el.getAttribute('data-raw');
+    el.innerHTML = renderMarkdown(raw);
+    wrapCodeBlocks(el);
+  });
+
   const chatMessages = document.getElementById('chatMessages');
   const welcomeState = document.getElementById('welcomeState');
-  const thinkingRow  = document.getElementById('thinkingRow');
-  const fileInput    = document.getElementById('fileInput');
-  const filePreview  = document.getElementById('filePreview');
-  const attachBtn    = document.getElementById('attachBtn');
-  const promptInput  = document.getElementById('promptInput');
-  const sendBtn      = document.getElementById('sendBtn');
-  const chatForm     = document.getElementById('chatForm');
+  const thinkingRow = document.getElementById('thinkingRow');
+  const fileInput = document.getElementById('fileInput');
+  const filePreview = document.getElementById('filePreview');
+  const attachBtn = document.getElementById('attachBtn');
+  const promptInput = document.getElementById('promptInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const chatForm = document.getElementById('chatForm');
 
   let selectedFiles = [];
 
+  const chatPage = document.querySelector('.chat-page');
+
   function syncWelcome() {
-    welcomeState.classList.toggle('hidden', chatMessages.children.length > 0);
+    const hasMessages = chatMessages.children.length > 0;
+    welcomeState.classList.toggle('hidden', hasMessages);
+    chatPage.classList.toggle('welcome-mode', !hasMessages);
   }
   syncWelcome();
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -451,7 +618,10 @@
     }
   });
 
-  attachBtn.addEventListener('click', (e) => { e.preventDefault(); fileInput.click(); });
+  attachBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    fileInput.click();
+  });
 
   fileInput.addEventListener('change', () => {
     selectedFiles = [...selectedFiles, ...Array.from(fileInput.files)];
@@ -462,12 +632,13 @@
     filePreview.innerHTML = '';
     selectedFiles.forEach((file, i) => {
       const ext = file.name.split('.').pop().toUpperCase();
+      const shortName = file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name;
       const chip = document.createElement('div');
       chip.className = 'file-chip';
       chip.innerHTML = `
-        <div class="file-chip-icon ${ext.toLowerCase()}">${ext}</div>
+        <div class="file-chip-icon">${ext}</div>
         <div class="file-chip-info">
-          <div class="file-chip-name" title="${file.name}">${file.name}</div>
+          <div class="file-chip-name" title="${file.name}">${shortName}</div>
           <div class="file-chip-size">${fmtSize(file.size)}</div>
         </div>
         <button type="button" class="file-chip-remove" data-i="${i}" title="Remove">×</button>
@@ -498,9 +669,9 @@
     return (b / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
   }
 
-  function addMessage(text, isUser, files = []) {
+function addMessage(text, isUser, files = []) {
     welcomeState.classList.add('hidden');
-
+    chatPage.classList.remove('welcome-mode');
     const row = document.createElement('div');
     row.className = `msg-row ${isUser ? 'user' : 'ai'}`;
 
@@ -508,29 +679,36 @@
       let filesHtml = '';
       if (files.length) {
         filesHtml = '<div class="user-files">' +
-          files.map(f => `
-            <div class="attached-chip">
-              <div class="chip-icon">${f.name.split('.').pop().toUpperCase()}</div>
-              <span class="chip-name" title="${f.name}">${f.name}</span>
-            </div>`).join('') +
+          files.map(f => {
+            const ext = f.name.split('.').pop().toUpperCase();
+            const shortName = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
+            return `
+              <div class="attached-chip">
+                <div class="chip-icon">${ext}</div>
+                <span class="chip-name" title="${f.name}">${shortName}</span>
+              </div>`;
+          }).join('') +
           '</div>';
       }
       row.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:flex-end;max-width:72%">
+        <div>
           ${filesHtml}
-          <div class="bubble">${escHtml(text) || '(PDF uploaded)'}</div>
+          ${text ? `<div class="bubble">${escHtml(text)}</div>` : ''}
           <div class="msg-time">Just now</div>
         </div>`;
     } else {
       row.innerHTML = `
         <div class="ai-header">
           <div class="ai-avatar">
-            <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:white"><path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9zm-1 13H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:white">
+              <path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9zm-1 13H9V8h2v8zm4 0h-2V8h2v8z"/>
+            </svg>
           </div>
           <span class="ai-name">ContextFlow</span>
         </div>
-        <div class="bubble">${escHtml(text)}</div>
+        <div class="bubble">${renderMarkdown(text)}</div>
         <div class="msg-time">Just now</div>`;
+      wrapCodeBlocks(row);
     }
 
     chatMessages.appendChild(row);
@@ -558,7 +736,10 @@
     const question = promptInput.value.trim();
     const hasFiles = selectedFiles.length > 0;
 
-    if (!question && !hasFiles) { e.preventDefault(); return; }
+    if (!question && !hasFiles) {
+      e.preventDefault();
+      return;
+    }
 
     if (!hasFiles) {
       e.preventDefault();
@@ -580,17 +761,17 @@
         hideThinking();
         addMessage(data.error ? `Error: ${data.error}` : data.answer, false);
       })
-      .catch(err => { hideThinking(); addMessage('Something went wrong. Please try again.', false); });
-
+      .catch(() => {
+        hideThinking();
+        addMessage('Something went wrong. Please try again.', false);
+      });
       return;
     }
 
     e.preventDefault();
     syncInput();
-
     const attachedFiles = [...selectedFiles];
     addMessage(question, true, attachedFiles);
-
     selectedFiles = [];
     renderChips();
     promptInput.value = '';
@@ -605,13 +786,12 @@
       .then(r => r.json())
       .then(data => {
         hideThinking();
-        if (data.error) {
-          addMessage(`Error: ${data.error}`, false);
-        } else {
-          addMessage(data.answer, false);
-        }
+        addMessage(data.error ? `Error: ${data.error}` : data.answer, false);
       })
-      .catch(() => { hideThinking(); addMessage('Something went wrong. Please try again.', false); });
+      .catch(() => {
+        hideThinking();
+        addMessage('Something went wrong. Please try again.', false);
+      });
   });
 </script>
 
