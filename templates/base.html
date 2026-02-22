@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Django App{% endblock %}</title>
+    <title>{% block title %}ContextFlow{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 
@@ -17,196 +17,95 @@
                         <img src="{% static 'images/sidebar.svg' %}" width="24" height="24" alt="Menu">
                     </a>
                 </li>
-                
                 <li>
                     <a href="{% url 'new_conversation' %}">
                         <img src="{% static 'images/chat.svg' %}" width="24" height="24" alt="New">
                         <span>New Chat</span>
                     </a>
                 </li>
-                
                 <li>
                     <a href="{% url 'chats' %}">
                         <img src="{% static 'images/search.svg' %}" width="24" height="24" alt="Search">
                         <span>Search</span>
                     </a>
                 </li>
-                
                 <li>
                     <a href="{% url 'files' %}">
                         <img src="{% static 'images/document.svg' %}" width="24" height="24" alt="Docs">
                         <span>Documents</span>
                     </a>
                 </li>
-                
                 <li>
                     <a href="{% url 'chats' %}">
                         <img src="{% static 'images/history.svg' %}" width="24" height="24" alt="History">
                         <span>History</span>
                     </a>
                 </li>
-                
+                {% if user.is_authenticated and conversations %}
+                <li class="chat-history-section">
+                    <div class="sidebar-section-header">Recent</div>
+                    <div class="chat-history-list">
+                        {% for conv in conversations %}
+                        <a href="{% url 'load_conversation' conv.id %}"
+                           class="chat-history-item {% if conversation.id == conv.id %}active{% endif %}">
+                            <span class="chat-title">{{ conv.title|truncatechars:28 }}</span>
+                            <button class="chat-delete" data-id="{{ conv.id }}" title="Delete">&times;</button>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </li>
+                {% endif %}
                 <li>
                     <a href="#">
                         <img src="{% static 'images/settings.svg' %}" width="24" height="24" alt="Settings">
                         <span>Settings</span>
                     </a>
                 </li>
+                
             </ul>
         </nav>
     </aside>
-    
+
     <nav>
         <div class="logo">ContextFlow</div>
         <div class="nav-links">
-        {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}">Logout</a>
-        {% else %}
-            <a href="{% url 'login' %}">Login</a>
-            <a href="{% url 'signup' %}">Sign Up For Free</a>
-        {% endif %}
+            {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}">Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'signup' %}">Sign Up For Free</a>
+            {% endif %}
         </div>
     </nav>
-    
-    <main>
-        {% block content %}
-            <h1>Where should we begin?</h1>
-            
-            <form method="POST" enctype="multipart/form-data" action="{% url 'documents' %}" id="homeForm">
-                {% csrf_token %}
-                
-                <input type="file" 
-                       name="file_field" 
-                       multiple 
-                       id="home_file_input" 
-                       class="hidden-input">
 
-                <div id="home-file-preview-area" class="file-preview-container"></div>
-                
-                <div class="input-row">
-                    <button type="button" class="icon-button" id="home-file-trigger" title="Attach files">
-                        <img src="{% static 'images/add.svg' %}" width="24" height="24" alt="Add">
-                    </button>
-                    
-                    <input type="text" name="text_prompt" id="homePromptInput" placeholder="Ask anything">
-                    
-                    <button type="button" class="mic-button">
-                        <img src="{% static 'images/microphone.svg' %}" width="20" height="20" alt="Voice">
-                    </button>
-                    
-                    <button type="submit" id="homeSubmitBtn">
-                        <img src="{% static 'images/arrow.svg' %}" width="24" height="24" alt="Search">
-                    </button>
-                </div>
-            </form>
-        {% endblock %}
+    <main>
+        {% block content %}{% endblock %}
     </main>
 
     <script>
         function toggleSidebar(e) {
             e.preventDefault();
             document.body.classList.toggle("sb-expanded");
-            const isExpanded = document.body.classList.contains("sb-expanded");
-            localStorage.setItem("sidebar-expanded", isExpanded);
+            localStorage.setItem("sidebar-expanded", document.body.classList.contains("sb-expanded"));
         }
-        
-        document.addEventListener("DOMContentLoaded", function() {
-            const savedState = localStorage.getItem("sidebar-expanded");
-            if (savedState === "false") {
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (localStorage.getItem("sidebar-expanded") === "false") {
                 document.body.classList.remove("sb-expanded");
             }
+        });
 
-            const homeFileInput = document.getElementById('home_file_input');
-            const homeFileTrigger = document.getElementById('home-file-trigger');
-            const homeFilePreview = document.getElementById('home-file-preview-area');
-            const homeForm = document.getElementById('homeForm');
-            
-            if (!homeForm) return;
-
-            let selectedFiles = [];
-            
-            homeFileTrigger && homeFileTrigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                homeFileInput.click();
-            });
-            
-            homeFileInput && homeFileInput.addEventListener('change', function(e) {
-                const newFiles = Array.from(e.target.files);
-                selectedFiles = selectedFiles.concat(newFiles);
-                updateHomeFilePreview();
-            });
-            
-            function updateHomeFilePreview() {
-                if (!homeFilePreview) return;
-                homeFilePreview.innerHTML = '';
-                if (selectedFiles.length === 0) return;
-                
-                selectedFiles.forEach((file, index) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'file-chip';
-                    
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    const icon = document.createElement('div');
-                    icon.className = 'file-chip-icon';
-                    icon.textContent = ext.toUpperCase();
-                    chip.appendChild(icon);
-                    
-                    const info = document.createElement('div');
-                    info.className = 'file-chip-info';
-                    
-                    const fileName = document.createElement('div');
-                    fileName.className = 'file-chip-name';
-                    const shortName = file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name;
-                    fileName.textContent = shortName;
-                    fileName.title = file.name;
-                    info.appendChild(fileName);
-                    
-                    const fileSize = document.createElement('div');
-                    fileSize.className = 'file-chip-size';
-                    fileSize.textContent = formatFileSize(file.size);
-                    info.appendChild(fileSize);
-                    
-                    chip.appendChild(info);
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'file-chip-remove';
-                    removeBtn.innerHTML = '&times;';
-                    removeBtn.title = 'Remove file';
-                    removeBtn.onclick = function() {
-                        selectedFiles.splice(index, 1);
-                        updateHomeFilePreview();
-                        syncFileInput();
-                    };
-                    chip.appendChild(removeBtn);
-                    homeFilePreview.appendChild(chip);
-                });
-            }
-            
-            function formatFileSize(bytes) {
-                if (!bytes) return '0 B';
-                const u = ['B', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(1024));
-                return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
-            }
-            
-            function syncFileInput() {
-                const dt = new DataTransfer();
-                selectedFiles.forEach(f => dt.items.add(f));
-                homeFileInput.files = dt.files;
-            }
-
-            homeForm.addEventListener('submit', function(e) {
-                const prompt = document.getElementById('homePromptInput').value.trim();
-                const hasFiles = selectedFiles.length > 0;
-
-                if (!prompt && !hasFiles) {
-                    e.preventDefault();
-                    return;
-                }
-
-                syncFileInput();
+        document.addEventListener("click", function(e) {
+            const btn = e.target.closest(".chat-delete");
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const convId = btn.dataset.id;
+            fetch(`/documents/conversation/${convId}/delete/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            }).then(r => r.json()).then(data => {
+                if (data.success) location.reload();
             });
         });
     </script>

@@ -1,11 +1,14 @@
 import os
 import re
-from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.views.generic.edit import FormView
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_openai import ChatOpenAI
+
 from .forms import FileFieldForm
 from .models import Message, Attachment, Conversation
-from django.views.generic.edit import FormView
-from django.http import JsonResponse
 from .utils import setup_vectorstore, get_advanced_chain, answer_without_pdf
 
 
@@ -22,31 +25,41 @@ def _build_title(prompt, files):
 
 class ChatUploadView(FormView):
     form_class = FileFieldForm
-    template_name = "documents/document.html"
-    success_url = "/documents/"
+    template_name = 'documents/document.html'
+    success_url = '/documents/'
 
     def form_valid(self, form):
         prompt = form.cleaned_data.get('text_prompt', '').strip()
         files = form.cleaned_data.get('file_field', [])
 
         conversation = Conversation.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else None,
-            title=_build_title(prompt, files)
+            user=(
+                self.request.user
+                if self.request.user.is_authenticated else None
+            ),
+            title=_build_title(prompt, files),
         )
 
         user_message = Message.objects.create(
             conversation=conversation,
             text=prompt,
             is_ai_response=False,
-            user=self.request.user if self.request.user.is_authenticated else None
+            user=(
+                self.request.user
+                if self.request.user.is_authenticated else None
+            ),
         )
 
         attachment_paths = []
-        for f in files:
+        for file in files:
             attachment = Attachment.objects.create(
                 message=user_message,
-                user=self.request.user if self.request.user.is_authenticated else None,
-                file=f
+                user=(
+                    self.request.user
+                    if self.request.user.is_authenticated
+                    else None
+                ),
+                file=file,
             )
             attachment_paths.append(attachment.file.path)
 
@@ -54,12 +67,16 @@ class ChatUploadView(FormView):
 
         if prompt:
             try:
-                pdf_paths = [p for p in attachment_paths if p.lower().endswith('.pdf')]
+                pdf_paths = [
+                    p for p in attachment_paths if p.lower().endswith('.pdf')
+                ]
 
                 if pdf_paths:
                     retriever = setup_vectorstore(pdf_paths[0])
                     chain = get_advanced_chain(retriever)
-                    response = chain.invoke({"question": prompt, "chat_history": []})
+                    response = chain.invoke(
+                        {'question': prompt, 'chat_history': []}
+                    )
                     ai_answer = response['answer']
                     conversation.last_pdf_path = pdf_paths[0]
                     conversation.save()
@@ -73,21 +90,23 @@ class ChatUploadView(FormView):
                     conversation=conversation,
                     text=ai_answer,
                     is_ai_response=True,
-                    user=None
+                    user=None,
                 )
 
-            except Exception as e:
-                print(f"Processing error: {e}")
-                ai_answer = f"Error: {str(e)}"
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f'Processing error: {exc}')
+                ai_answer = f'Error: {str(exc)}'
                 Message.objects.create(
                     conversation=conversation,
                     text=ai_answer,
                     is_ai_response=True,
-                    user=None
+                    user=None,
                 )
 
         elif attachment_paths:
-            pdf_paths = [p for p in attachment_paths if p.lower().endswith('.pdf')]
+            pdf_paths = [
+                p for p in attachment_paths if p.lower().endswith('.pdf')
+            ]
             if pdf_paths:
                 conversation.last_pdf_path = pdf_paths[0]
                 conversation.save()
@@ -112,7 +131,9 @@ class ChatUploadView(FormView):
         if active_conv_id:
             try:
                 conversation = Conversation.objects.get(id=active_conv_id)
-                context['messages'] = conversation.messages.all().order_by('created_at')
+                context['messages'] = (
+                    conversation.messages.all().order_by('created_at')
+                )
                 context['conversation'] = conversation
             except Conversation.DoesNotExist:
                 context['messages'] = []
@@ -124,7 +145,9 @@ class ChatUploadView(FormView):
 @login_required
 def load_conversation(request, conversation_id):
     try:
-        conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+        conversation = Conversation.objects.get(
+            id=conversation_id, user=request.user
+        )
 
         request.session['active_conversation_id'] = conversation.id
 
@@ -141,7 +164,7 @@ def load_conversation(request, conversation_id):
         for msg in user_messages:
             ai_response = conversation.messages.filter(
                 is_ai_response=True,
-                created_at__gt=msg.created_at
+                created_at__gt=msg.created_at,
             ).first()
             if ai_response:
                 chat_history.append([msg.text, ai_response.text])
@@ -159,7 +182,9 @@ def delete_conversation(request, conversation_id):
         return JsonResponse({'error': 'Invalid method'}, status=405)
 
     try:
-        conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+        conversation = Conversation.objects.get(
+            id=conversation_id, user=request.user
+        )
         conversation.delete()
 
         if request.session.get('active_conversation_id') == conversation_id:
@@ -183,10 +208,12 @@ def new_conversation(request):
 
 @login_required
 def user_file_views(request):
-    user_files = Attachment.objects.filter(user=request.user).select_related('message')
+    user_files = Attachment.objects.filter(
+        user=request.user
+    ).select_related('message')
     context = {
         'files': user_files,
-        'total_files': user_files.count()
+        'total_files': user_files.count(),
     }
     return render(request, 'documents/files.html', context)
 
@@ -200,9 +227,6 @@ def chat_followup(request):
         return JsonResponse({'error': 'No question provided'}, status=400)
 
     try:
-        from langchain_openai import ChatOpenAI
-        from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-
         last_pdf = request.session.get('last_retriever')
         raw_history = request.session.get('chat_history', [])
         chat_history = [tuple(pair) for pair in raw_history]
@@ -211,9 +235,13 @@ def chat_followup(request):
         if last_pdf and os.path.exists(last_pdf):
             retriever = setup_vectorstore(last_pdf)
             docs = retriever.invoke(question)
-            context = "\n\n".join(doc.page_content for doc in docs) if docs else ""
+            context_text = (
+                '\n\n'.join(doc.page_content for doc in docs) if docs else ''
+            )
 
-            llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", max_tokens=1024)
+            llm = ChatOpenAI(
+                temperature=0, model='gpt-4o-mini', max_tokens=1024
+            )
             history_msgs = []
             for human, ai in chat_history:
                 history_msgs.append(HumanMessage(content=human))
@@ -221,10 +249,11 @@ def chat_followup(request):
 
             messages = [
                 SystemMessage(content=(
-                    "You are ContextFlow, a helpful assistant. "
+                    'You are ContextFlow, a helpful assistant. '
                     "Answer the user's question using the context below. "
-                    "If the context does not contain enough information, say so clearly.\n\n"
-                    f"Context:\n{context}"
+                    'If the context does not contain enough information, '
+                    'say so clearly.\n\n'
+                    f'Context:\n{context_text}'
                 )),
                 *history_msgs,
                 HumanMessage(content=question),
@@ -233,13 +262,15 @@ def chat_followup(request):
         else:
             answer = answer_without_pdf(question, chat_history)
 
-        chat_history.append((question, answer))
+        chat_history = list(chat_history) + [(question, answer)]
         request.session['chat_history'] = [list(pair) for pair in chat_history]
 
         if not active_conv_id:
             conversation = Conversation.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                title=question[:50]
+                user=(
+                    request.user if request.user.is_authenticated else None
+                ),
+                title=question[:50],
             )
             active_conv_id = conversation.id
             request.session['active_conversation_id'] = active_conv_id
@@ -250,21 +281,23 @@ def chat_followup(request):
                 conversation=conversation,
                 text=question,
                 is_ai_response=False,
-                user=request.user if request.user.is_authenticated else None
+                user=(
+                    request.user if request.user.is_authenticated else None
+                ),
             )
             Message.objects.create(
                 conversation=conversation,
                 text=answer,
                 is_ai_response=True,
-                user=None
+                user=None,
             )
         except Conversation.DoesNotExist:
             pass
 
         return JsonResponse({'answer': answer})
 
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        return JsonResponse({'error': str(exc)}, status=500)
 
 
 @login_required
@@ -281,8 +314,8 @@ def delete_file(request, file_id):
 
     except Attachment.DoesNotExist:
         return JsonResponse({'error': 'File not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        return JsonResponse({'error': str(exc)}, status=500)
 
 
 @login_required
@@ -293,11 +326,22 @@ def chats_history(request):
 
     conv_data = []
     for conv in conversations:
-        first_user_msg = conv.messages.filter(is_ai_response=False).order_by('created_at').first()
-        preview = first_user_msg.text[:80] if first_user_msg and first_user_msg.text else ''
+        first_user_msg = (
+            conv.messages.filter(is_ai_response=False)
+            .order_by('created_at')
+            .first()
+        )
+        preview = (
+            first_user_msg.text[:80]
+            if first_user_msg and first_user_msg.text
+            else ''
+        )
+        is_default_title = not conv.title or conv.title == 'New conversation'
         conv_data.append({
             'id': conv.id,
-            'title': conv.title if conv.title and conv.title != 'New conversation' else (preview or 'Untitled'),
+            'title': (
+                conv.title if not is_default_title else (preview or 'Untitled')
+            ),
             'preview': preview,
             'created_at': conv.created_at,
             'message_count': conv.messages.count(),
@@ -305,7 +349,7 @@ def chats_history(request):
 
     context = {
         'conv_data': conv_data,
-        'total_chats': conversations.count()
+        'total_chats': conversations.count(),
     }
     return render(request, 'documents/chats.html', context)
 

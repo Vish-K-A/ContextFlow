@@ -13,3 +13,13 @@ db.sqlite3
 # Media (Uploaded user files)
 media/
 !media/.gitkeep
+
+# Vector Database Stores
+chroma_store/
+faiss_store/
+
+# General Python/Django ignores
+__pycache__/
+*.py[cod]
+db.sqlite3
+.env
