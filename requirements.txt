@@ -1,0 +1,13 @@
+Django==6.0
+python-dotenv==1.2.1
+openai==2.21.0
+langchain==1.2.10
+langchain-openai==1.1.9
+langchain-community==0.4.1
+langchain-core==1.2.13
+langchain-text-splitters==1.1.0
+faiss-cpu==1.13.2
+pypdf==6.7.0
+numpy==2.4.2
+torch==2.10.0
+sentence-transformers==5.2.2

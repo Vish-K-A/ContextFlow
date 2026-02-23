@@ -393,6 +393,61 @@
 
   .file-chip-remove:hover { color: #333; }
 
+  .active-pdf-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ebebeb;
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+    padding: 6px 10px 6px 8px;
+    max-width: 240px;
+  }
+
+  .active-pdf-chip .file-chip-icon {
+    font-size: 9px;
+    font-weight: 700;
+    background: #333;
+    border-radius: 4px;
+    padding: 3px 6px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .active-pdf-chip .file-chip-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .active-pdf-chip .file-chip-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .active-pdf-chip .file-chip-size {
+    font-size: 11px;
+    color: #666;
+  }
+
+  .active-pdf-chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+
+  .active-pdf-chip-remove:hover { color: #111; }
+
   .input-row {
     display: flex;
     align-items: center;
@@ -491,7 +546,23 @@
       {% else %}
         <div class="msg-row user">
           <div>
-            <div class="bubble">{{ message.text }}</div>
+            {% with attachments=message.attachments.all %}
+              {% if attachments %}
+                <div class="user-files">
+                  {% for att in attachments %}
+                    {% with fname=att.file.name|slice:"19:" %}
+                    <div class="attached-chip">
+                      <div class="chip-icon">PDF</div>
+                      <span class="chip-name" title="{{ fname }}">{{ fname|truncatechars:24 }}</span>
+                    </div>
+                    {% endwith %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+            {% if message.text %}
+              <div class="bubble">{{ message.text }}</div>
+            {% endif %}
             <div class="msg-time">{{ message.created_at|date:"M d, H:i" }}</div>
           </div>
         </div>
@@ -515,7 +586,18 @@
       <input type="file" id="fileInput" name="file_field" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.txt">
 
       <div class="chat-input-form">
-        <div class="file-preview-container" id="filePreview"></div>
+        <div class="file-preview-container" id="filePreview">
+          {% if active_pdf_name %}
+            <div class="file-chip" id="activePdfChip">
+              <div class="file-chip-icon">PDF</div>
+              <div class="file-chip-info">
+                <div class="file-chip-name" title="{{ active_pdf_name }}">{{ active_pdf_name|truncatechars:24 }}</div>
+                <div class="file-chip-size">{% if active_pdf_size %}{{ active_pdf_size }}{% endif %}</div>
+              </div>
+              <button type="button" class="file-chip-remove" id="activePdfRemove" title="Remove">×</button>
+            </div>
+          {% endif %}
+        </div>
 
         <div class="input-row">
           <button type="button" class="icon-button" id="attachBtn" title="Attach file">
@@ -549,14 +631,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 
 <script>
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-  });
+  marked.setOptions({ breaks: true, gfm: true });
 
-  function renderMarkdown(text) {
-    return marked.parse(text);
-  }
+  function renderMarkdown(text) { return marked.parse(text); }
 
   function wrapCodeBlocks(el) {
     el.querySelectorAll('pre').forEach(pre => {
@@ -586,13 +663,13 @@
 
   const chatMessages = document.getElementById('chatMessages');
   const welcomeState = document.getElementById('welcomeState');
-  const thinkingRow = document.getElementById('thinkingRow');
-  const fileInput = document.getElementById('fileInput');
-  const filePreview = document.getElementById('filePreview');
-  const attachBtn = document.getElementById('attachBtn');
-  const promptInput = document.getElementById('promptInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const chatForm = document.getElementById('chatForm');
+  const thinkingRow  = document.getElementById('thinkingRow');
+  const fileInput    = document.getElementById('fileInput');
+  const filePreview  = document.getElementById('filePreview');
+  const attachBtn    = document.getElementById('attachBtn');
+  const promptInput  = document.getElementById('promptInput');
+  const sendBtn      = document.getElementById('sendBtn');
+  const chatForm     = document.getElementById('chatForm');
 
   let selectedFiles = [];
 
@@ -629,7 +706,11 @@
   });
 
   function renderChips() {
+    const activePdfChip = document.getElementById('activePdfChip');
     filePreview.innerHTML = '';
+
+    if (activePdfChip) filePreview.appendChild(activePdfChip);
+
     selectedFiles.forEach((file, i) => {
       const ext = file.name.split('.').pop().toUpperCase();
       const shortName = file.name.length > 22 ? file.name.slice(0, 20) + '…' : file.name;
@@ -653,7 +734,24 @@
         syncInput();
       });
     });
+
+    const removeActivePdf = document.getElementById('activePdfRemove');
+    if (removeActivePdf) {
+      removeActivePdf.onclick = () => {
+        const chip = document.getElementById('activePdfChip');
+        if (chip) chip.remove();
+      };
+    }
+
     syncInput();
+  }
+
+  const initialRemoveBtn = document.getElementById('activePdfRemove');
+  if (initialRemoveBtn) {
+    initialRemoveBtn.onclick = () => {
+      const chip = document.getElementById('activePdfChip');
+      if (chip) chip.remove();
+    };
   }
 
   function syncInput() {
@@ -669,7 +767,7 @@
     return (b / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
   }
 
-function addMessage(text, isUser, files = []) {
+  function addMessage(text, isUser, files = []) {
     welcomeState.classList.add('hidden');
     chatPage.classList.remove('welcome-mode');
     const row = document.createElement('div');
@@ -746,6 +844,8 @@ function addMessage(text, isUser, files = []) {
       addMessage(question, true);
       promptInput.value = '';
       promptInput.style.height = 'auto';
+      const activePdfChipEl = document.getElementById('activePdfChip');
+      if (activePdfChipEl) activePdfChipEl.remove();
       showThinking();
 
       fetch("{% url 'chat_followup' %}", {
@@ -772,6 +872,10 @@ function addMessage(text, isUser, files = []) {
     syncInput();
     const attachedFiles = [...selectedFiles];
     addMessage(question, true, attachedFiles);
+
+    const activePdfChip = document.getElementById('activePdfChip');
+    if (activePdfChip) activePdfChip.remove();
+
     selectedFiles = [];
     renderChips();
     promptInput.value = '';
@@ -794,5 +898,4 @@ function addMessage(text, isUser, files = []) {
       });
   });
 </script>
-
 {% endblock %}

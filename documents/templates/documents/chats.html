@@ -27,8 +27,8 @@
       <div class="chat-item" data-id="{{ conv.id }}" data-search="{{ conv.title|lower }}">
         <a href="{% url 'load_conversation' conv.id %}" class="chat-link">
           <div class="chat-content">
-            <h3 class="chat-title">{{ conv.title }}</h3>
-            <p class="chat-preview">{{ conv.preview|default:"No messages yet" }}</p>
+            <div class="ci-title">{{ conv.title }}</div>
+            <div class="ci-preview">{{ conv.preview|default:"No messages yet" }}</div>
           </div>
           <span class="chat-meta">{{ conv.created_at|date:"M d, H:i" }} &middot; {{ conv.message_count }} msg{{ conv.message_count|pluralize }}</span>
         </a>
@@ -160,31 +160,39 @@
   color: inherit;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   min-width: 0;
 }
 
 .chat-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.chat-title {
+.ci-title {
   font-size: 14.5px;
   font-weight: 500;
   color: #1a1a1a;
-  margin: 0 0 0.25rem 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
+  opacity: 1;
 }
 
-.chat-preview {
+.ci-preview {
   font-size: 13px;
+  font-weight: 400;
   color: #666;
-  margin: 0 0 0.2rem 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
+  opacity: 1;
 }
 
 .chat-meta {
@@ -193,11 +201,8 @@
   white-space: nowrap;
   flex-shrink: 0;
   align-self: center;
-  margin-left: auto;
-  padding-left: 1rem;
 }
 
-/* Matches file-action style from files.html exactly */
 .chat-delete-btn {
   width: 36px;
   height: 36px;
@@ -207,17 +212,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  opacity: 1;
 }
 
-.chat-delete-btn:hover {
-  background: #e5e5e5;
-  color: #333;
-}
+.chat-delete-btn:hover { background: #e5e5e5; }
 
 .empty-chats {
   display: flex;
@@ -264,11 +264,11 @@ const chatsCount = document.getElementById('chatsCount');
 if (searchInput && chatsList) {
   const items = chatsList.querySelectorAll('.chat-item');
   const total = items.length;
-  
+
   searchInput.oninput = (e) => {
     const term = e.target.value.toLowerCase().trim();
     let count = 0;
-    
+
     items.forEach(item => {
       const text = item.dataset.search || '';
       if (text.includes(term)) {
@@ -278,7 +278,7 @@ if (searchInput && chatsList) {
         item.classList.add('hidden');
       }
     });
-    
+
     if (chatsCount) {
       chatsCount.textContent = term
         ? `${count} of ${total} chat${total !== 1 ? 's' : ''} with ContextFlow`
@@ -293,9 +293,9 @@ document.addEventListener('click', (e) => {
     const btn = e.target.closest('.chat-delete-btn');
     const chatId = btn.dataset.id;
     const chatItem = btn.closest('.chat-item');
-    
+
     if (!confirm('Delete this conversation?')) return;
-    
+
     fetch(`/documents/conversation/${chatId}/delete/`, {
       method: 'POST',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' }

@@ -4,8 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.generic.edit import FormView
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_openai import ChatOpenAI
 
 from .forms import FileFieldForm
 from .models import Message, Attachment, Conversation
@@ -21,6 +19,12 @@ def _build_title(prompt, files):
         clean = re.sub(r'_[A-Za-z0-9]{6,8}(?=[.][^.]+$)', '', base_name)
         return (clean or base_name)[:50] or 'Uploaded document'
     return 'New conversation'
+
+
+def _pdf_basename(path):
+    if not path:
+        return None
+    return os.path.basename(path)
 
 
 class ChatUploadView(FormView):
@@ -81,6 +85,7 @@ class ChatUploadView(FormView):
                     conversation.last_pdf_path = pdf_paths[0]
                     conversation.save()
                     self.request.session['last_retriever'] = pdf_paths[0]
+                    self.request.session['last_retriever_name'] = _pdf_basename(pdf_paths[0])
                 else:
                     ai_answer = answer_without_pdf(prompt, [])
 
@@ -93,7 +98,7 @@ class ChatUploadView(FormView):
                     user=None,
                 )
 
-            except Exception as exc:  # pylint: disable=broad-exception-caught
+            except Exception as exc:
                 print(f'Processing error: {exc}')
                 ai_answer = f'Error: {str(exc)}'
                 Message.objects.create(
@@ -111,6 +116,7 @@ class ChatUploadView(FormView):
                 conversation.last_pdf_path = pdf_paths[0]
                 conversation.save()
                 self.request.session['last_retriever'] = pdf_paths[0]
+                self.request.session['last_retriever_name'] = _pdf_basename(pdf_paths[0])
 
         self.request.session['active_conversation_id'] = conversation.id
 
@@ -139,6 +145,14 @@ class ChatUploadView(FormView):
                 context['messages'] = []
         else:
             context['messages'] = []
+
+        last_pdf = self.request.session.get('last_retriever')
+        last_pdf_name = self.request.session.get('last_retriever_name')
+        if last_pdf and os.path.exists(last_pdf):
+            context['active_pdf_name'] = last_pdf_name or _pdf_basename(last_pdf)
+        else:
+            context['active_pdf_name'] = None
+
         return context
 
 
@@ -153,8 +167,10 @@ def load_conversation(request, conversation_id):
 
         if conversation.last_pdf_path:
             request.session['last_retriever'] = conversation.last_pdf_path
+            request.session['last_retriever_name'] = _pdf_basename(conversation.last_pdf_path)
         else:
             request.session.pop('last_retriever', None)
+            request.session.pop('last_retriever_name', None)
 
         chat_history = []
         user_messages = conversation.messages.filter(
@@ -190,6 +206,7 @@ def delete_conversation(request, conversation_id):
         if request.session.get('active_conversation_id') == conversation_id:
             request.session.pop('active_conversation_id', None)
             request.session.pop('last_retriever', None)
+            request.session.pop('last_retriever_name', None)
             request.session.pop('chat_history', None)
 
         return JsonResponse({'success': True})
@@ -202,6 +219,7 @@ def delete_conversation(request, conversation_id):
 def new_conversation(request):
     request.session.pop('active_conversation_id', None)
     request.session.pop('last_retriever', None)
+    request.session.pop('last_retriever_name', None)
     request.session.pop('chat_history', None)
     return redirect('documents')
 
@@ -234,33 +252,13 @@ def chat_followup(request):
 
         if last_pdf and os.path.exists(last_pdf):
             retriever = setup_vectorstore(last_pdf)
-            docs = retriever.invoke(question)
-            context_text = (
-                '\n\n'.join(doc.page_content for doc in docs) if docs else ''
+            chain = get_advanced_chain(retriever)
+            response = chain.invoke(
+                {'question': question, 'chat_history': list(chat_history)}
             )
-
-            llm = ChatOpenAI(
-                temperature=0, model='gpt-4o-mini', max_tokens=1024
-            )
-            history_msgs = []
-            for human, ai in chat_history:
-                history_msgs.append(HumanMessage(content=human))
-                history_msgs.append(AIMessage(content=ai))
-
-            messages = [
-                SystemMessage(content=(
-                    'You are ContextFlow, a helpful assistant. '
-                    "Answer the user's question using the context below. "
-                    'If the context does not contain enough information, '
-                    'say so clearly.\n\n'
-                    f'Context:\n{context_text}'
-                )),
-                *history_msgs,
-                HumanMessage(content=question),
-            ]
-            answer = llm.invoke(messages).content
+            answer = response['answer']
         else:
-            answer = answer_without_pdf(question, chat_history)
+            answer = answer_without_pdf(question, list(chat_history))
 
         chat_history = list(chat_history) + [(question, answer)]
         request.session['chat_history'] = [list(pair) for pair in chat_history]
@@ -296,7 +294,7 @@ def chat_followup(request):
 
         return JsonResponse({'answer': answer})
 
-    except Exception as exc:  # pylint: disable=broad-exception-caught
+    except Exception as exc:
         return JsonResponse({'error': str(exc)}, status=500)
 
 
@@ -314,7 +312,7 @@ def delete_file(request, file_id):
 
     except Attachment.DoesNotExist:
         return JsonResponse({'error': 'File not found'}, status=404)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
+    except Exception as exc:
         return JsonResponse({'error': str(exc)}, status=500)
 
 
@@ -361,6 +359,7 @@ def load_file_in_chat(request, file_id):
         request.session.pop('active_conversation_id', None)
         request.session.pop('chat_history', None)
         request.session['last_retriever'] = attachment.file.path
+        request.session['last_retriever_name'] = _pdf_basename(attachment.file.path)
         return redirect('documents')
 
     except Attachment.DoesNotExist:
